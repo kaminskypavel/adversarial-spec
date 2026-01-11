@@ -9,8 +9,9 @@ A Claude Code plugin that iteratively refines product specifications through mul
 ## Quick Start
 
 ```bash
-# 1. Install the plugin
-claude plugin add github:zscole/adversarial-spec
+# 1. Add the marketplace and install the plugin
+claude plugin marketplace add zscole/adversarial-spec
+claude plugin install adversarial-spec
 
 # 2. Set at least one API key
 export OPENAI_API_KEY="sk-..."
