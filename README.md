@@ -226,6 +226,42 @@ Use cases:
 - Design documents or prior specs for consistency
 - Compliance requirements documents
 
+### Session Persistence and Resume
+
+Long debates can crash or need to pause. Sessions save state automatically:
+
+```bash
+# Start a named session
+echo "spec" | python3 debate.py critique --models gpt-4o --session my-feature-spec
+
+# Resume where you left off
+python3 debate.py critique --resume my-feature-spec
+
+# List all sessions
+python3 debate.py sessions
+```
+
+Sessions save:
+- Current spec state
+- Round number
+- All configuration (models, focus, persona, etc.)
+- History of previous rounds
+
+Sessions are stored in `~/.config/adversarial-spec/sessions/`.
+
+### Auto-Checkpointing
+
+When using sessions, each round's spec is saved to `.adversarial-spec-checkpoints/`:
+
+```
+.adversarial-spec-checkpoints/
+├── my-feature-spec-round-1.md
+├── my-feature-spec-round-2.md
+└── my-feature-spec-round-3.md
+```
+
+Use these to rollback if a revision makes things worse.
+
 ### Preserve Intent Mode
 
 Convergence can sand off novel ideas when models interpret "unusual" as "wrong". The `--preserve-intent` flag makes removal expensive:
@@ -346,6 +382,7 @@ Debate summary includes rounds completed, cycles run, models involved, Claude's 
 ```bash
 # Core commands
 debate.py critique --models MODEL_LIST --doc-type TYPE [OPTIONS] < spec.md
+debate.py critique --resume SESSION_ID
 debate.py diff --previous OLD.md --current NEW.md
 debate.py export-tasks --models MODEL --doc-type TYPE [--json] < spec.md
 
@@ -354,6 +391,7 @@ debate.py providers      # List providers and API key status
 debate.py focus-areas    # List focus areas
 debate.py personas       # List personas
 debate.py profiles       # List saved profiles
+debate.py sessions       # List saved sessions
 
 # Profile management
 debate.py save-profile NAME --models ... [--focus ...] [--persona ...]
@@ -367,6 +405,8 @@ debate.py save-profile NAME --models ... [--focus ...] [--persona ...]
 - `--context, -c` - Context file (repeatable)
 - `--profile` - Load saved profile
 - `--preserve-intent` - Require justification for removals
+- `--session, -s` - Session ID for persistence and checkpointing
+- `--resume` - Resume a previous session
 - `--press, -p` - Anti-laziness check
 - `--telegram, -t` - Enable Telegram
 - `--json, -j` - JSON output

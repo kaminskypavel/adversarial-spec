@@ -533,6 +533,64 @@ Use cases:
 - Include design documents or prior specs for consistency
 - Include compliance requirements documents
 
+### Session Persistence and Resume
+
+Long debates can crash or need to pause. Sessions save state automatically:
+
+```bash
+# Start a named session
+python3 debate.py critique --models gpt-4o --session my-feature-spec --doc-type tech <<'SPEC_EOF'
+<spec here>
+SPEC_EOF
+
+# Resume where you left off (no stdin needed)
+python3 debate.py critique --resume my-feature-spec
+
+# List all sessions
+python3 debate.py sessions
+```
+
+Sessions save:
+- Current spec state
+- Round number
+- All configuration (models, focus, persona, preserve-intent)
+- History of previous rounds
+
+Sessions are stored in `~/.config/adversarial-spec/sessions/`.
+
+### Auto-Checkpointing
+
+When using sessions, each round's spec is saved to `.adversarial-spec-checkpoints/` in the current directory:
+
+```
+.adversarial-spec-checkpoints/
+├── my-feature-spec-round-1.md
+├── my-feature-spec-round-2.md
+└── my-feature-spec-round-3.md
+```
+
+Use these to rollback if a revision makes things worse.
+
+### Retry on API Failure
+
+API calls automatically retry with exponential backoff (1s, 2s, 4s) up to 3 times. If a model times out or rate-limits, you'll see:
+
+```
+Warning: gpt-4o failed (attempt 1/3): rate limit exceeded. Retrying in 1.0s...
+```
+
+If all retries fail, the error is reported and other models continue.
+
+### Response Validation
+
+If a model provides critique but doesn't include proper `[SPEC]` tags, a warning is displayed:
+
+```
+Warning: gpt-4o provided critique but no [SPEC] tags found. Response may be malformed.
+```
+
+This catches cases where models forget to format their revised spec correctly.
+
 ### Preserve Intent Mode
 
 Convergence can collapse toward lowest-common-denominator interpretations, sanding off novel design choices. The `--preserve-intent` flag makes removals expensive:
@@ -643,6 +701,7 @@ cat spec-output.md | python3 debate.py export-tasks --models gpt-4o --doc-type p
 ```bash
 # Core commands
 python3 debate.py critique --models MODEL_LIST --doc-type TYPE [OPTIONS] < spec.md
+python3 debate.py critique --resume SESSION_ID
 python3 debate.py diff --previous OLD.md --current NEW.md
 python3 debate.py export-tasks --models MODEL --doc-type TYPE [--json] < spec.md
 
@@ -651,6 +710,7 @@ python3 debate.py providers      # List supported providers and API key status
 python3 debate.py focus-areas    # List available focus areas
 python3 debate.py personas       # List available personas
 python3 debate.py profiles       # List saved profiles
+python3 debate.py sessions       # List saved sessions
 
 # Profile management
 python3 debate.py save-profile NAME --models ... [--focus ...] [--persona ...]
@@ -668,6 +728,8 @@ python3 debate.py send-final --models MODEL_LIST --doc-type TYPE --rounds N < sp
 - `--context, -c` - Context file (can be used multiple times)
 - `--profile` - Load settings from saved profile
 - `--preserve-intent` - Require explicit justification for any removal
+- `--session, -s` - Session ID for persistence and checkpointing
+- `--resume` - Resume a previous session by ID
 - `--press, -p` - Anti-laziness check for early agreement
 - `--telegram, -t` - Enable Telegram notifications
 - `--poll-timeout` - Telegram reply timeout in seconds (default: 60)

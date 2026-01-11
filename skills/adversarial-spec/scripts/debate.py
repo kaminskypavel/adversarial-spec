@@ -11,10 +11,13 @@ Usage:
     echo "spec" | python3 debate.py critique --models gpt-4o --context ./api.md --context ./schema.sql
     echo "spec" | python3 debate.py critique --models gpt-4o --profile strict-security
     echo "spec" | python3 debate.py critique --models gpt-4o --preserve-intent
+    echo "spec" | python3 debate.py critique --models gpt-4o --session my-debate
+    python3 debate.py critique --resume my-debate
     echo "spec" | python3 debate.py diff --previous prev.md --current current.md
     echo "spec" | python3 debate.py export-tasks --doc-type prd
     python3 debate.py providers
     python3 debate.py profiles
+    python3 debate.py sessions
 
 Supported providers (set corresponding API key):
     OpenAI:    OPENAI_API_KEY      models: gpt-4o, gpt-4-turbo, o1, etc.
@@ -39,10 +42,12 @@ import sys
 import argparse
 import json
 import difflib
+import time
 import concurrent.futures
 from pathlib import Path
 from typing import Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
+from datetime import datetime
 
 os.environ["LITELLM_LOG"] = "ERROR"
 
@@ -76,6 +81,11 @@ MODEL_COSTS = {
 DEFAULT_COST = {"input": 5.00, "output": 15.00}
 
 PROFILES_DIR = Path.home() / ".config" / "adversarial-spec" / "profiles"
+SESSIONS_DIR = Path.home() / ".config" / "adversarial-spec" / "sessions"
+CHECKPOINTS_DIR = Path.cwd() / ".adversarial-spec-checkpoints"
+
+MAX_RETRIES = 3
+RETRY_BASE_DELAY = 1.0  # seconds
 
 PRESERVE_INTENT_PROMPT = """
 **PRESERVE ORIGINAL INTENT**
@@ -424,6 +434,63 @@ class CostTracker:
 cost_tracker = CostTracker()
 
 
+@dataclass
+class SessionState:
+    """Persisted state for resume functionality."""
+    session_id: str
+    spec: str
+    round: int
+    doc_type: str
+    models: list
+    focus: Optional[str] = None
+    persona: Optional[str] = None
+    preserve_intent: bool = False
+    created_at: str = ""
+    updated_at: str = ""
+    history: list = field(default_factory=list)
+
+    def save(self):
+        SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+        self.updated_at = datetime.now().isoformat()
+        path = SESSIONS_DIR / f"{self.session_id}.json"
+        path.write_text(json.dumps(asdict(self), indent=2))
+
+    @classmethod
+    def load(cls, session_id: str) -> "SessionState":
+        path = SESSIONS_DIR / f"{session_id}.json"
+        if not path.exists():
+            raise FileNotFoundError(f"Session '{session_id}' not found")
+        data = json.loads(path.read_text())
+        return cls(**data)
+
+    @classmethod
+    def list_sessions(cls) -> list[dict]:
+        if not SESSIONS_DIR.exists():
+            return []
+        sessions = []
+        for p in SESSIONS_DIR.glob("*.json"):
+            try:
+                data = json.loads(p.read_text())
+                sessions.append({
+                    "id": data["session_id"],
+                    "round": data["round"],
+                    "doc_type": data["doc_type"],
+                    "updated_at": data.get("updated_at", ""),
+                })
+            except Exception:
+                pass
+        return sorted(sessions, key=lambda x: x.get("updated_at", ""), reverse=True)
+
+
+def save_checkpoint(spec: str, round_num: int, session_id: Optional[str] = None):
+    """Save spec checkpoint for this round."""
+    CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
+    prefix = f"{session_id}-" if session_id else ""
+    path = CHECKPOINTS_DIR / f"{prefix}round-{round_num}.md"
+    path.write_text(spec)
+    print(f"Checkpoint saved: {path}", file=sys.stderr)
+
+
 def get_system_prompt(doc_type: str, persona: Optional[str] = None) -> str:
     if persona:
         persona_key = persona.lower().replace(" ", "-").replace("_", "-")
@@ -526,7 +593,7 @@ def call_single_model(
     context: Optional[str] = None,
     preserve_intent: bool = False
 ) -> ModelResponse:
-    """Send spec to a single model and return response."""
+    """Send spec to a single model and return response with retry on failure."""
     system_prompt = get_system_prompt(doc_type, persona)
     doc_type_name = get_doc_type_name(doc_type)
 
@@ -550,36 +617,49 @@ def call_single_model(
         context_section=context_section
     )
 
-    try:
-        response = completion(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7,
-            max_tokens=8000
-        )
-        content = response.choices[0].message.content
-        agreed = "[AGREE]" in content
-        extracted = extract_spec(content)
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = completion(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.7,
+                max_tokens=8000
+            )
+            content = response.choices[0].message.content
+            agreed = "[AGREE]" in content
+            extracted = extract_spec(content)
 
-        input_tokens = response.usage.prompt_tokens if response.usage else 0
-        output_tokens = response.usage.completion_tokens if response.usage else 0
-        cost = cost_tracker.add(model, input_tokens, output_tokens)
+            # Validation warning if model critiqued but didn't provide revised spec
+            if not agreed and not extracted:
+                print(f"Warning: {model} provided critique but no [SPEC] tags found. Response may be malformed.", file=sys.stderr)
 
-        return ModelResponse(
-            model=model,
-            response=content,
-            agreed=agreed,
-            spec=extracted,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            cost=cost
-        )
-    except Exception as e:
-        error_msg = str(e)
-        return ModelResponse(model=model, response="", agreed=False, spec=None, error=error_msg)
+            input_tokens = response.usage.prompt_tokens if response.usage else 0
+            output_tokens = response.usage.completion_tokens if response.usage else 0
+            cost = cost_tracker.add(model, input_tokens, output_tokens)
+
+            return ModelResponse(
+                model=model,
+                response=content,
+                agreed=agreed,
+                spec=extracted,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost=cost
+            )
+        except Exception as e:
+            last_error = str(e)
+            if attempt < MAX_RETRIES - 1:
+                delay = RETRY_BASE_DELAY * (2 ** attempt)  # exponential backoff
+                print(f"Warning: {model} failed (attempt {attempt + 1}/{MAX_RETRIES}): {last_error}. Retrying in {delay:.1f}s...", file=sys.stderr)
+                time.sleep(delay)
+            else:
+                print(f"Error: {model} failed after {MAX_RETRIES} attempts: {last_error}", file=sys.stderr)
+
+    return ModelResponse(model=model, response="", agreed=False, spec=None, error=last_error)
 
 
 def call_models_parallel(
@@ -845,7 +925,7 @@ Document types:
   tech  - Technical Specification / Architecture Document (engineering focus)
         """
     )
-    parser.add_argument("action", choices=["critique", "providers", "send-final", "diff", "export-tasks", "focus-areas", "personas", "profiles", "save-profile"],
+    parser.add_argument("action", choices=["critique", "providers", "send-final", "diff", "export-tasks", "focus-areas", "personas", "profiles", "save-profile", "sessions"],
                         help="Action to perform")
     parser.add_argument("profile_name", nargs="?", help="Profile name (for save-profile action)")
     parser.add_argument("--models", "-m", default="gpt-4o",
@@ -880,6 +960,10 @@ Document types:
                         help="Show cost summary after critique")
     parser.add_argument("--preserve-intent", action="store_true",
                         help="Require explicit justification for any removal or substantial modification")
+    parser.add_argument("--session", "-s",
+                        help="Session ID for state persistence (enables checkpointing and resume)")
+    parser.add_argument("--resume",
+                        help="Resume a previous session by ID")
     args = parser.parse_args()
 
     # Handle simple info commands
@@ -897,6 +981,21 @@ Document types:
 
     if args.action == "profiles":
         list_profiles()
+        return
+
+    if args.action == "sessions":
+        sessions = SessionState.list_sessions()
+        print("Saved Sessions:\n")
+        if not sessions:
+            print("  No sessions found.")
+            print(f"\n  Sessions are stored in: {SESSIONS_DIR}")
+            print("\n  Start a session with: --session <name>")
+        else:
+            for s in sessions:
+                print(f"  {s['id']}")
+                print(f"    round: {s['round']}, type: {s['doc_type']}")
+                print(f"    updated: {s['updated_at'][:19] if s['updated_at'] else 'unknown'}")
+                print()
         return
 
     if args.action == "save-profile":
@@ -1003,11 +1102,49 @@ Document types:
             sys.exit(1)
         return
 
-    # Main critique action
-    spec = sys.stdin.read().strip()
-    if not spec:
-        print("Error: No spec provided via stdin", file=sys.stderr)
-        sys.exit(1)
+    # Handle resume
+    session_state = None
+    if args.resume:
+        try:
+            session_state = SessionState.load(args.resume)
+            print(f"Resuming session '{args.resume}' at round {session_state.round}", file=sys.stderr)
+            spec = session_state.spec
+            args.round = session_state.round
+            args.doc_type = session_state.doc_type
+            args.models = ",".join(session_state.models)
+            if session_state.focus:
+                args.focus = session_state.focus
+            if session_state.persona:
+                args.persona = session_state.persona
+            if session_state.preserve_intent:
+                args.preserve_intent = session_state.preserve_intent
+            # Re-parse models
+            models = session_state.models
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(2)
+    else:
+        # Main critique action
+        spec = sys.stdin.read().strip()
+        if not spec:
+            print("Error: No spec provided via stdin", file=sys.stderr)
+            sys.exit(1)
+
+    # Initialize session if --session provided
+    if args.session and not session_state:
+        session_state = SessionState(
+            session_id=args.session,
+            spec=spec,
+            round=args.round,
+            doc_type=args.doc_type,
+            models=models,
+            focus=args.focus,
+            persona=args.persona,
+            preserve_intent=args.preserve_intent,
+            created_at=datetime.now().isoformat(),
+        )
+        session_state.save()
+        print(f"Session '{args.session}' created", file=sys.stderr)
 
     mode = "pressing for confirmation" if args.press else "critiquing"
     focus_info = f" (focus: {args.focus})" if args.focus else ""
@@ -1027,6 +1164,29 @@ Document types:
     successful = [r for r in results if not r.error]
     all_agreed = all(r.agreed for r in successful) if successful else False
 
+    # Save checkpoint after each round
+    session_id = session_state.session_id if session_state else args.session
+    if session_id or args.session:
+        save_checkpoint(spec, args.round, session_id)
+
+    # Get the latest spec from results (first non-agreed response with a spec)
+    latest_spec = spec
+    for r in successful:
+        if r.spec:
+            latest_spec = r.spec
+            break
+
+    # Update session state
+    if session_state:
+        session_state.spec = latest_spec
+        session_state.round = args.round + 1
+        session_state.history.append({
+            "round": args.round,
+            "all_agreed": all_agreed,
+            "models": [{"model": r.model, "agreed": r.agreed, "error": r.error} for r in results],
+        })
+        session_state.save()
+
     user_feedback = None
     if args.telegram:
         user_feedback = send_telegram_notification(models, args.round, results, args.poll_timeout)
@@ -1042,6 +1202,7 @@ Document types:
             "focus": args.focus,
             "persona": args.persona,
             "preserve_intent": args.preserve_intent,
+            "session": session_state.session_id if session_state else args.session,
             "results": [
                 {
                     "model": r.model,
