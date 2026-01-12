@@ -26,6 +26,7 @@ Generate and refine specifications through iterative debate with multiple LLMs u
 | Mistral   | `MISTRAL_API_KEY`    | `mistral/mistral-large`, `mistral/codestral`|
 | Groq      | `GROQ_API_KEY`       | `groq/llama-3.3-70b-versatile`              |
 | Deepseek  | `DEEPSEEK_API_KEY`   | `deepseek/deepseek-chat`                    |
+| Zhipu     | `ZHIPUAI_API_KEY`    | `zhipu/glm-4`, `zhipu/glm-4-plus`           |
 | Codex CLI | (ChatGPT subscription) | `codex/gpt-5.2-codex`, `codex/gpt-5.1-codex-max` |
 
 **Codex CLI Setup:**
@@ -297,6 +298,10 @@ Then present available models to the user using AskUserQuestion with multiSelect
 
 **If DEEPSEEK_API_KEY is set, include:**
 - `deepseek/deepseek-chat` - Cost-effective
+
+**If ZHIPUAI_API_KEY is set, include:**
+- `zhipu/glm-4` - Chinese language model
+- `zhipu/glm-4-plus` - Enhanced GLM model
 
 Use AskUserQuestion like this:
 ```

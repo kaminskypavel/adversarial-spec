@@ -82,6 +82,8 @@ MODEL_COSTS = {
     "mistral/mistral-large": {"input": 2.00, "output": 6.00},
     "groq/llama-3.3-70b-versatile": {"input": 0.59, "output": 0.79},
     "deepseek/deepseek-chat": {"input": 0.14, "output": 0.28},
+    "zhipu/glm-4": {"input": 1.40, "output": 1.40},
+    "zhipu/glm-4-plus": {"input": 7.00, "output": 7.00},
     # Codex CLI models (uses ChatGPT subscription, no per-token cost)
     "codex/gpt-5.2-codex": {"input": 0.0, "output": 0.0},
     "codex/gpt-5.1-codex-max": {"input": 0.0, "output": 0.0},
@@ -1129,6 +1131,7 @@ def list_providers():
         ("Groq", "GROQ_API_KEY", "groq/llama-3.3-70b-versatile"),
         ("Together", "TOGETHER_API_KEY", "together_ai/meta-llama/Llama-3-70b"),
         ("Deepseek", "DEEPSEEK_API_KEY", "deepseek/deepseek-chat"),
+        ("Zhipu", "ZHIPUAI_API_KEY", "zhipu/glm-4, zhipu/glm-4-plus"),
     ]
 
     if bedrock_config.get("enabled"):

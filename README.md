@@ -65,6 +65,7 @@ You describe product --> Claude drafts spec --> Multiple LLMs critique in parall
 | Mistral   | `MISTRAL_API_KEY`    | `mistral/mistral-large`, `mistral/codestral` |
 | Groq      | `GROQ_API_KEY`       | `groq/llama-3.3-70b-versatile`               |
 | Deepseek  | `DEEPSEEK_API_KEY`   | `deepseek/deepseek-chat`                     |
+| Zhipu     | `ZHIPUAI_API_KEY`    | `zhipu/glm-4`, `zhipu/glm-4-plus`            |
 
 Check which keys are configured:
 
@@ -94,6 +95,24 @@ python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock disable
 When Bedrock is enabled, **all model calls route through Bedrock** - no direct API calls are made. Use friendly names like `claude-3-sonnet` which are automatically mapped to Bedrock model IDs.
 
 Configuration is stored at `~/.claude/adversarial-spec/config.json`.
+
+## OpenAI-Compatible Endpoints
+
+For models that expose an OpenAI-compatible API (local LLMs, self-hosted models, alternative providers), set `OPENAI_API_BASE`:
+
+```bash
+# Point to a custom endpoint
+export OPENAI_API_KEY="your-key"
+export OPENAI_API_BASE="https://your-endpoint.com/v1"
+
+# Use with any model name
+python3 debate.py critique --models gpt-4o < spec.md
+```
+
+This works with:
+- Local LLM servers (Ollama, vLLM, text-generation-webui)
+- OpenAI-compatible providers
+- Self-hosted inference endpoints
 
 ## Usage
 
