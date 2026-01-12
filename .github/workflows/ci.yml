@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Run ruff check
+        run: ruff check skills/adversarial-spec/scripts/
+
+      - name: Run ruff format check
+        run: ruff format --check skills/adversarial-spec/scripts/
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pytest litellm
+
+      - name: Run tests
+        working-directory: skills/adversarial-spec/scripts
+        run: python -m pytest tests/ -v
+
+  validate-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate plugin.json
+        run: python -c "import json; json.load(open('.claude-plugin/plugin.json'))"
+
+      - name: Validate marketplace.json
+        run: python -c "import json; json.load(open('.claude-plugin/marketplace.json'))"
+
+      - name: Check plugin.json required fields
+        run: |
+          python -c "
+          import json
+          data = json.load(open('.claude-plugin/plugin.json'))
+          required = ['name', 'version', 'description']
+          for field in required:
+              assert field in data, f'Missing required field: {field}'
+          print('plugin.json validation passed')
+          "
+
+      - name: Check marketplace.json required fields
+        run: |
+          python -c "
+          import json
+          data = json.load(open('.claude-plugin/marketplace.json'))
+          assert 'name' in data, 'Missing name'
+          assert 'plugins' in data, 'Missing plugins'
+          assert len(data['plugins']) > 0, 'No plugins defined'
+          print('marketplace.json validation passed')
+          "
