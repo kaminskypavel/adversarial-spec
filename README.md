@@ -68,6 +68,7 @@ You describe product --> Claude drafts spec --> Multiple LLMs critique in parall
 | Mistral    | `MISTRAL_API_KEY`      | `mistral/mistral-large`, `mistral/codestral` |
 | Groq       | `GROQ_API_KEY`         | `groq/llama-3.3-70b-versatile`               |
 | OpenRouter | `OPENROUTER_API_KEY`   | `openrouter/openai/gpt-4o`, `openrouter/anthropic/claude-3.5-sonnet` |
+| Codex CLI  | ChatGPT subscription   | `codex/gpt-5.2-codex`, `codex/gpt-5.1-codex-max` |
 | Deepseek   | `DEEPSEEK_API_KEY`     | `deepseek/deepseek-chat`                     |
 | Zhipu      | `ZHIPUAI_API_KEY`      | `zhipu/glm-4`, `zhipu/glm-4-plus`            |
 
@@ -126,6 +127,41 @@ python3 debate.py critique --models openrouter/openai/gpt-4o,openrouter/anthropi
 - `openrouter/qwen/qwen-2.5-72b-instruct` - Qwen 2.5 72B
 
 See the full model list at [openrouter.ai/models](https://openrouter.ai/models).
+
+## Codex CLI Support
+
+[Codex CLI](https://github.com/openai/codex) allows ChatGPT Pro subscribers to use OpenAI models without separate API credits. Models prefixed with `codex/` are routed through the Codex CLI.
+
+**Setup:**
+
+```bash
+# Install Codex CLI (requires ChatGPT Pro subscription)
+npm install -g @openai/codex
+
+# Use Codex models (prefix with codex/)
+python3 debate.py critique --models codex/gpt-5.2-codex,gemini/gemini-2.0-flash < spec.md
+```
+
+**Reasoning effort:**
+
+Control how much thinking time the model uses with `--codex-reasoning`:
+
+```bash
+# Available levels: low, medium, high, xhigh (default: xhigh)
+python3 debate.py critique --models codex/gpt-5.2-codex --codex-reasoning high < spec.md
+```
+
+Higher reasoning effort produces more thorough analysis but uses more tokens.
+
+**Available Codex models:**
+- `codex/gpt-5.2-codex` - GPT-5.2 via Codex CLI
+- `codex/gpt-5.1-codex-max` - GPT-5.1 Max via Codex CLI
+
+Check Codex CLI installation status:
+
+```bash
+python3 ~/.claude/skills/adversarial-spec/scripts/debate.py providers
+```
 
 ## OpenAI-Compatible Endpoints
 
@@ -482,6 +518,7 @@ debate.py bedrock list-models                 # List built-in model mappings
 **Options:**
 - `--models, -m` - Comma-separated model list (auto-detects from available API keys if not specified)
 - `--doc-type, -d` - prd or tech
+- `--codex-reasoning` - Reasoning effort for Codex models (low, medium, high, xhigh; default: xhigh)
 - `--focus, -f` - Focus area (security, scalability, performance, ux, reliability, cost)
 - `--persona` - Professional persona
 - `--context, -c` - Context file (repeatable)
