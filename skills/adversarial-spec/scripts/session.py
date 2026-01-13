@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Optional
 import json
 import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 SESSIONS_DIR = Path.home() / ".config" / "adversarial-spec" / "sessions"
 CHECKPOINTS_DIR = Path.cwd() / ".adversarial-spec-checkpoints"

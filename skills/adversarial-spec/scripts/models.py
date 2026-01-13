@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
 import concurrent.futures
 import difflib
 import json
@@ -12,6 +11,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 os.environ["LITELLM_LOG"] = "ERROR"
 

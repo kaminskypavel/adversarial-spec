@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Optional
 import json
 import os
 import shutil
 import sys
 from pathlib import Path
+from typing import Optional
 
 from prompts import FOCUS_AREAS, PERSONAS
 
@@ -354,7 +354,7 @@ def get_available_providers() -> list[tuple[str, Optional[str], str]]:
         ("Zhipu", "ZHIPUAI_API_KEY", "zhipu/glm-4"),
     ]
 
-    available = []
+    available: list[tuple[str, Optional[str], str]] = []
     for name, key, model in providers:
         if os.environ.get(key):
             available.append((name, key, model))
