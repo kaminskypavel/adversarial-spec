@@ -317,6 +317,7 @@ USER REQUEST:
             "exec",
             "--json",
             "--full-auto",
+            "--skip-git-repo-check",
             "--model",
             actual_model,
             "-c",
