@@ -76,7 +76,7 @@ You describe product --> Claude drafts spec --> Multiple LLMs critique in parall
 Check which keys are configured:
 
 ```bash
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py providers
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" providers
 ```
 
 ## AWS Bedrock Support
@@ -85,17 +85,17 @@ For enterprise users who need to route all model calls through AWS Bedrock (e.g.
 
 ```bash
 # Enable Bedrock mode
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock enable --region us-east-1
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock enable --region us-east-1
 
 # Add models enabled in your Bedrock account
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock add-model claude-3-sonnet
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock add-model claude-3-haiku
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock add-model claude-3-sonnet
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock add-model claude-3-haiku
 
 # Check configuration
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock status
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock status
 
 # Disable Bedrock mode
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock disable
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock disable
 ```
 
 When Bedrock is enabled, **all model calls route through Bedrock** - no direct API calls are made. Use friendly names like `claude-3-sonnet` which are automatically mapped to Bedrock model IDs.
@@ -161,7 +161,7 @@ Higher reasoning effort produces more thorough analysis but uses more tokens.
 Check Codex CLI installation status:
 
 ```bash
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py providers
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" providers
 ```
 
 ## Gemini CLI Support
@@ -185,7 +185,7 @@ python3 debate.py critique --models gemini-cli/gemini-3-pro-preview < spec.md
 Check Gemini CLI installation status:
 
 ```bash
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py providers
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" providers
 ```
 
 ## OpenAI-Compatible Endpoints
@@ -481,7 +481,7 @@ Get notified on your phone and inject feedback during the debate.
 
 1. Message @BotFather on Telegram, send `/newbot`, follow prompts
 2. Copy the bot token
-3. Run: `python3 ~/.claude/skills/adversarial-spec/scripts/telegram_bot.py setup`
+3. Run: `python3 "$(find ~/.claude -name telegram_bot.py -path '*adversarial-spec*' 2>/dev/null | head -1)" setup`
 4. Message your bot, run setup again to get your chat ID
 5. Set environment variables:
 
