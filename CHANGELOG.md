@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Added `--skip-git-repo-check` flag to Codex CLI calls for non-git directory support
+- Script paths now use dynamic lookup to work with both manual and marketplace installations
 - Replaced hardcoded `gpt-4o` default model with dynamic detection based on available API keys
 - Added pre-flight validation to check that models have required API keys before running critique
 - Added clear error messages when API keys are missing, showing which key is needed for each model
