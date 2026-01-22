@@ -43,7 +43,7 @@ Generate and refine specifications through iterative debate with multiple LLMs u
 - Models: `gemini-3-pro-preview`, `gemini-3-flash-preview`
 - No API key needed - uses Google account authentication
 
-Run `python3 ~/.claude/skills/adversarial-spec/scripts/debate.py providers` to see which keys are set.
+Run `python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" providers` to see which keys are set.
 
 ## Troubleshooting Auth Conflicts
 
@@ -80,17 +80,17 @@ To enable Bedrock mode, use these CLI commands (Claude can invoke these when the
 
 ```bash
 # Enable Bedrock mode with a region
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock enable --region us-east-1
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock enable --region us-east-1
 
 # Add models that are enabled in your Bedrock account
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock add-model claude-3-sonnet
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock add-model claude-3-haiku
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock add-model claude-3-sonnet
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock add-model claude-3-haiku
 
 # Check current configuration
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock status
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock status
 
 # Disable Bedrock mode (revert to direct API keys)
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock disable
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock disable
 ```
 
 ### Bedrock Model Names
@@ -102,7 +102,7 @@ Users can specify models using friendly names (e.g., `claude-3-sonnet`), which a
 - `mistral-7b`, `mistral-large`, `mixtral-8x7b`
 - `cohere-command`, `cohere-command-r`, `cohere-command-r-plus`
 
-Run `python3 ~/.claude/skills/adversarial-spec/scripts/debate.py bedrock list-models` to see all mappings.
+Run `python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" bedrock list-models` to see all mappings.
 
 ### Bedrock Configuration Location
 
@@ -307,7 +307,7 @@ Output format (whether loaded or generated):
 First, check which API keys are configured:
 
 ```bash
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py providers
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" providers
 ```
 
 Then present available models to the user using AskUserQuestion with multiSelect. Build the options list based on which API keys are set:
@@ -361,7 +361,7 @@ More models = more perspectives = stricter convergence.
 Run the debate script with selected models:
 
 ```bash
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py critique --models MODEL_LIST --doc-type TYPE <<'SPEC_EOF'
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" critique --models MODEL_LIST --doc-type TYPE <<'SPEC_EOF'
 <paste your document here>
 SPEC_EOF
 ```
@@ -403,7 +403,7 @@ Synthesis:
 If any model says `[AGREE]` within the first 2 rounds, be skeptical. Press the model by running another critique round with explicit instructions:
 
 ```bash
-python3 ~/.claude/skills/adversarial-spec/scripts/debate.py critique --models MODEL_NAME --doc-type TYPE --press <<'SPEC_EOF'
+python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" critique --models MODEL_NAME --doc-type TYPE --press <<'SPEC_EOF'
 <spec here>
 SPEC_EOF
 ```
@@ -487,7 +487,7 @@ When ALL opponent models AND you have said `[AGREE]`:
    ```
 4. If Telegram enabled:
    ```bash
-   python3 ~/.claude/skills/adversarial-spec/scripts/debate.py send-final --models MODEL_LIST --doc-type TYPE --rounds N <<'SPEC_EOF'
+   python3 "$(find ~/.claude -name debate.py -path '*adversarial-spec*' 2>/dev/null | head -1)" send-final --models MODEL_LIST --doc-type TYPE --rounds N <<'SPEC_EOF'
    <final document here>
    SPEC_EOF
    ```
@@ -592,7 +592,7 @@ Enable real-time notifications and human-in-the-loop feedback. Only active with 
 2. Copy the bot token
 3. Run setup:
    ```bash
-   python3 ~/.claude/skills/adversarial-spec/scripts/telegram_bot.py setup
+   python3 "$(find ~/.claude -name telegram_bot.py -path '*adversarial-spec*' 2>/dev/null | head -1)" setup
    ```
 4. Message your bot, then run setup again to get chat ID
 5. Set environment variables:
