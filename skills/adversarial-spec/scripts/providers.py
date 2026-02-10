@@ -34,6 +34,7 @@ MODEL_COSTS = {
     "zhipu/glm-4": {"input": 1.40, "output": 1.40},
     "zhipu/glm-4-plus": {"input": 7.00, "output": 7.00},
     # Codex CLI models (uses ChatGPT subscription, no per-token cost)
+    "codex/gpt-5.3-codex": {"input": 0.0, "output": 0.0},
     "codex/gpt-5.2-codex": {"input": 0.0, "output": 0.0},
     "codex/gpt-5.1-codex-max": {"input": 0.0, "output": 0.0},
     "codex/gpt-5.1-codex-mini": {"input": 0.0, "output": 0.0},
