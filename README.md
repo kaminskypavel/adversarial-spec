@@ -152,7 +152,14 @@ Control how much thinking time the model uses with `--codex-reasoning`:
 python3 debate.py critique --models codex/gpt-5.3-codex --codex-reasoning high < spec.md
 ```
 
-Higher reasoning effort produces more thorough analysis but uses more tokens.
+| Level    | Description                                       |
+|----------|---------------------------------------------------|
+| `low`    | Fast responses with lighter reasoning              |
+| `medium` | Balances speed and reasoning depth (Codex default) |
+| `high`   | Greater reasoning depth for complex problems       |
+| `xhigh`  | Extra high reasoning depth (adversarial-spec default) |
+
+The plugin defaults to `xhigh` because adversarial spec review benefits from thorough, deep analysis. Use `medium` or `high` for faster iterations.
 
 **Available Codex models:**
 - `codex/gpt-5.3-codex` - GPT-5.3 via Codex CLI

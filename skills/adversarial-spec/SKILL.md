@@ -35,7 +35,7 @@ Generate and refine specifications through iterative debate with multiple LLMs u
 
 **Codex CLI Setup:**
 - Install: `npm install -g @openai/codex && codex login`
-- Reasoning effort: `--codex-reasoning` (minimal, low, medium, high, xhigh)
+- Reasoning effort: `--codex-reasoning` (low, medium, high, xhigh). Default: `xhigh` for thorough spec analysis. Codex model default is `medium`.
 - Web search: `--codex-search` (enables web search for current information)
 
 **Gemini CLI Setup:**
